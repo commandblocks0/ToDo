@@ -91,6 +91,7 @@ function load(anim = false) {
         text.innerText = todos[i].text;
 
         todo.querySelector(".remove").addEventListener("click", () => {
+            if (!confirm("Are you sure?")) return;
             const id = todos[i].id;
             todos.splice(i, 1);
             changes.push({ type: "remove", id });
