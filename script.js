@@ -3,7 +3,7 @@ import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from
 import { doc, getDoc, setDoc, getFirestore } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
 const todos = JSON.parse(localStorage.getItem("todos")) || [];
-const changes = JSON.parse(localStorage.getItem("changes")) || [];
+const changes = JSON.parse(localStorage.getItem("changes")) || {};
 
 const addTopBtn = document.querySelector(".add-top");
 const addBottomBtn = document.querySelector(".add-bottom");
@@ -23,6 +23,7 @@ const firebaseConfig = {
 };
 
 let userId = null;
+let lastUserId = localStorage.getItem("lastUserId") || null;
 
 load(true);
 let db, auth
@@ -34,6 +35,8 @@ try {
     onAuthStateChanged(auth, (user) => {
         if (user) {
             userId = user.uid;
+            lastUserId = userId;
+            localStorage.setItem("lastUserId", userId);
             loginIndicator.classList.add("hidden");
             logoutIndicator.classList.remove("hidden");
             sync().then(() => {
@@ -54,7 +57,9 @@ authButton.addEventListener("click", () => {
     if (userId) {
         auth.signOut()
     } else {
-        signInWithPopup(auth, new GoogleAuthProvider())
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+        signInWithPopup(auth, provider)
     }
 });
 
@@ -64,10 +69,15 @@ function addTodo(type = "top") {
     const id = Date.now().toString() + Math.random().toString(16).slice(2);
     if (type === "top") {
         todos.unshift({ text: text.trim(), id });
-        changes.push({ type: "addTop", value: text, id });
+        if (lastUserId) {
+            if (!changes[lastUserId]) changes[lastUserId] = [];
+            changes[lastUserId].push({ type: "addTop", value: text, id });
+        }
     } else {
         todos.push({ text: text.trim(), id });
-        changes.push({ type: "addBottom", value: text, id });
+        if (lastUserId) {
+            changes[lastUserId].push({ type: "addBottom", value: text, id });
+        }
     }
     save();
     load(true);
@@ -94,7 +104,10 @@ function load(anim = false) {
             if (!confirm("Are you sure?")) return;
             const id = todos[i].id;
             todos.splice(i, 1);
-            changes.push({ type: "remove", id });
+            if (lastUserId) {
+                if (!changes[lastUserId]) changes[lastUserId] = [];
+                changes[lastUserId].push({ type: "remove", id });
+            }
             save();
             load();
         });
@@ -103,7 +116,10 @@ function load(anim = false) {
             if (i === 0) return;
             const id = todos[i].id;
             [todos[i - 1], todos[i]] = [todos[i], todos[i - 1]];
-            changes.push({ type: "moveUp", id });
+            if (lastUserId) {
+                if (!changes[lastUserId]) changes[lastUserId] = [];
+                changes[lastUserId].push({ type: "moveUp", id });
+            }
             save();
             load();
         });
@@ -112,7 +128,10 @@ function load(anim = false) {
             if (i === todos.length - 1) return;
             const id = todos[i].id;
             [todos[i], todos[i + 1]] = [todos[i + 1], todos[i]];
-            changes.push({ type: "moveDown", id });
+            if (lastUserId) {
+                if (!changes[lastUserId]) changes[lastUserId] = [];
+                changes[lastUserId].push({ type: "moveDown", id });
+            }
             save();
             load();
         });
@@ -128,7 +147,10 @@ function load(anim = false) {
             if (Math.abs(endX - startX) > 200) {
                 const id = todos[i].id;
                 todos.splice(i, 1);
-                changes.push({ type: "remove", id });
+                if (lastUserId) {
+                    if (!changes[lastUserId]) changes[lastUserId] = [];
+                    changes[lastUserId].push({ type: "remove", id });
+                }
                 save();
                 load();
             }
@@ -145,7 +167,10 @@ function load(anim = false) {
             text.addEventListener("blur", function handleBlur() {
                 text.contentEditable = "false";
                 todos[i].text = text.innerText.trim();
-                changes.push({ type: "edit", id: todos[i].id, value: todos[i].text });
+                if (lastUserId) {
+                    if (!changes[lastUserId]) changes[lastUserId] = [];
+                    changes[lastUserId].push({ type: "edit", id: todos[i].id, value: todos[i].text });
+                }
                 save();
                 load();
             }, { once: true });
@@ -159,8 +184,8 @@ function save() {
     sync();
 }
 
-function applyChanges(array, changes) {
-    for (let change of changes) {
+function applyChanges(array, array2) {
+    for (let change of array2) {
         if (change.type === "addTop") {
             array.unshift({ text: change.value, id: change.id });
         } else if (change.type === "addBottom") {
@@ -185,14 +210,16 @@ function applyChanges(array, changes) {
 async function sync() {
     try {
         if (!userId) return;
-        const cloudTodos = (await getDoc(doc(db, "data", userId))).data().todoList;
+        const docSnap = await getDoc(doc(db, "data", userId));
+        const cloudTodos = docSnap.exists() ? docSnap.data().todoList || [] : [];
+        const updatedTodos = applyChanges(cloudTodos, changes[userId] || []);
         await setDoc(doc(db, "data", userId), {
-            todoList: applyChanges(cloudTodos, changes)
+            todoList: updatedTodos
         })
 
         todos.length = 0;
-        changes.length = 0;
-        todos.push(...cloudTodos);
+        delete changes[userId];
+        todos.push(...updatedTodos);
         localStorage.setItem("todos", JSON.stringify(todos));
         localStorage.setItem("changes", JSON.stringify(changes));
     } catch {}
