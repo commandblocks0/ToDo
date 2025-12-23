@@ -145,6 +145,7 @@ function load(anim = false) {
             const endX = e.changedTouches[0].clientX;
             todo.style.opacity = 1;
             if (Math.abs(endX - startX) > 200) {
+                if (!confirm("Are you sure?")) return;
                 const id = todos[i].id;
                 todos.splice(i, 1);
                 if (lastUserId) {
