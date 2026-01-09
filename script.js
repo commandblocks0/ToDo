@@ -24,6 +24,7 @@ const firebaseConfig = {
 
 let userId = null;
 let lastUserId = localStorage.getItem("lastUserId") || null;
+let syncQueue = Promise.resolve()
 
 load(true);
 let db, auth
@@ -208,8 +209,8 @@ function applyChanges(array, array2) {
     return array;
 }
 
-async function sync() {
-    try {
+function sync() {
+    syncQueue = syncQueue.then(async()=>{
         if (!userId) return;
         const docSnap = await getDoc(doc(db, "data", userId));
         const cloudTodos = docSnap.exists() ? docSnap.data().todoList || [] : [];
@@ -223,5 +224,6 @@ async function sync() {
         todos.push(...updatedTodos);
         localStorage.setItem("todos", JSON.stringify(todos));
         localStorage.setItem("changes", JSON.stringify(changes));
-    } catch {}
+    }).catch(console.error)
+    return syncQueue
 }
