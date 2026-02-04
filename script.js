@@ -68,10 +68,10 @@ function addTodo(type = "top") {
     const text = prompt("ToDo");
     if (!text || !text.trim()) return;
     const id = Date.now().toString() + Math.random().toString(16).slice(2);
+    if (lastUserId && !changes[lastUserId]) changes[lastUserId] = [];
     if (type === "top") {
         todos.unshift({ text: text.trim(), id });
         if (lastUserId) {
-            if (!changes[lastUserId]) changes[lastUserId] = [];
             changes[lastUserId].push({ type: "addTop", value: text, id });
         }
     } else {
