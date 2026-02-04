@@ -189,8 +189,10 @@ function save() {
 function applyChanges(array, array2) {
     for (let change of array2) {
         if (change.type === "addTop") {
+            if (array.find(item => item.id === change.id)) continue
             array.unshift({ text: change.value, id: change.id });
         } else if (change.type === "addBottom") {
+            if (array.find(item => item.id === change.id)) continue
             array.push({ text: change.value, id: change.id });
         } else if (change.type === "remove") {
             const index = array.findIndex(item => item.id === change.id);
