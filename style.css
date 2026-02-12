@@ -94,6 +94,30 @@ button {
     background: transparent;
 }
 
+.todo .reorder {
+    flex: 0;
+    cursor: grab;
+    background: transparent;
+    touch-action: none;
+}
+
+.todo.dragging {
+    opacity: 0.9;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+}
+
+.todo.placeholder {
+    background: #1d1d1d;
+    border: 2px dashed #666;
+    border-radius: 10px;
+}
+
+body.reordering {
+    user-select: none;
+}
+
 /* ===== Auth ===== */
 .auth-button {
     position: absolute;
