@@ -102,7 +102,7 @@ button {
 }
 
 .todo.dragging {
-    opacity: 0.9;
+    opacity: 0.8;
     box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
     display: flex;
     align-items: center;

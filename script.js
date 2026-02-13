@@ -126,10 +126,12 @@ function load(anim = false) {
 
         let startX = null;
         todo.addEventListener("touchstart", (e) => {
+            if (dragState.active) return;
             startX = e.touches[0].clientX;
         });
 
         todo.addEventListener("touchend", (e) => {
+            if (dragState.active || startX==null) return;
             const endX = e.changedTouches[0].clientX;
             todo.style.opacity = 1;
             if (Math.abs(endX - startX) > 200) {
@@ -146,6 +148,7 @@ function load(anim = false) {
         });
 
         todo.addEventListener("touchmove", (e) => {
+            if (dragState.active || startX==null) return;
             const endX = e.changedTouches[0].clientX;
             todo.style.opacity = 1 - Math.abs(endX - startX) / 200;
         });
