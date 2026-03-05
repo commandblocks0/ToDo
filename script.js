@@ -59,9 +59,6 @@ try {
     })
 } catch (error) {}
 
-addTopBtn.addEventListener("click", () => addTodo("top"));
-addBottomBtn.addEventListener("click", () => addTodo("bottom"));
-
 authButton.addEventListener("click", () => {
     if (userId) {
         auth.signOut()
@@ -71,26 +68,6 @@ authButton.addEventListener("click", () => {
         signInWithPopup(auth, provider)
     }
 });
-
-function addTodo(type = "top") {
-    const text = prompt("ToDo");
-    if (!text || !text.trim()) return;
-    const id = Date.now().toString() + Math.random().toString(16).slice(2);
-    if (lastUserId && !changes[lastUserId]) changes[lastUserId] = [];
-    if (type === "top") {
-        todos.unshift({ text: text.trim(), id });
-        if (lastUserId) {
-            changes[lastUserId].push({ type: "addTop", value: text, id });
-        }
-    } else {
-        todos.push({ text: text.trim(), id });
-        if (lastUserId) {
-            changes[lastUserId].push({ type: "addBottom", value: text, id });
-        }
-    }
-    save();
-    load(true);
-}
 
 function load(anim = false) {
     todosWrapper.innerHTML = "";
@@ -358,3 +335,53 @@ function handlePointerUp(e) {
     cleanupDragState();
     load();
 }
+
+
+// create todo
+function addTodo(text, top) {
+    const id = Math.random().toString(16).slice(2);
+    if (lastUserId && !changes[lastUserId]) changes[lastUserId] = [];
+    if (top) {
+        todos.unshift({ text: text.trim(), id });
+        if (lastUserId) {
+            changes[lastUserId].push({ type: "addTop", value: text, id });
+        }
+    } else {
+        todos.push({ text: text.trim(), id });
+        if (lastUserId) {
+            changes[lastUserId].push({ type: "addBottom", value: text, id });
+        }
+    }
+    save();
+    load(true);
+}
+
+function setCreatePopupVisible(bool) {
+    const popup = document.querySelector(".create-popup")
+    popup.style.display = "flex"
+    popup.animate([
+        {scale: bool ? 0 : 1}, {scale: bool ? 1 : 0}
+    ],{
+        duration: 100,
+        fill: "forwards"
+    })
+    setTimeout(()=>{
+        if (!bool) popup.style.display = "none"
+    },300)
+}
+
+document.querySelector(".open-create").addEventListener("click",()=>{
+    setCreatePopupVisible(true)
+    document.getElementById("create-text").focus()
+})
+
+document.getElementById("create-create").addEventListener("click",()=>{
+    const text = document.getElementById("create-text")
+    const top = document.getElementById("create-top").checked
+    
+    if (text.value.trim()=="") return
+    addTodo(text.value, top)
+    setCreatePopupVisible(false)
+})
+
+document.getElementById("create-cancel").addEventListener("click", ()=>setCreatePopupVisible(false))
