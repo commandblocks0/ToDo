@@ -384,4 +384,10 @@ document.getElementById("create-create").addEventListener("click",()=>{
     setCreatePopupVisible(false)
 })
 
-document.getElementById("create-cancel").addEventListener("click", ()=>setCreatePopupVisible(false))
+document.getElementById("create-close").addEventListener("click", ()=>setCreatePopupVisible(false))
+
+document.querySelectorAll(".create-pos-option").forEach(el=>{
+    el.addEventListener("click",()=>{
+        el.querySelector("input").checked = true
+    })
+})

@@ -19,27 +19,27 @@
       <svg class="logout hidden" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z" /></svg>
    </button>
 
-      <div class="create-popup">
+   <div class="create-popup">
+      <button id="create-close">
+         <svg xmlns="http://www.w3.org/2000/svg" height="1rem" viewBox="0 -960 960 960" width="24px" fill="#fff"><path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/></svg>
+      </button>
       <div class="create-text-wrapper">
          <label for="create-text">Todo</label>
          <input autocomplete="off" id="create-text" type="text">
       </div>
       
       <div class="create-pos-wrapper">
-         <div>
+         <button class="create-pos-option">
             <input checked type="radio" name="create-pos" id="create-top">
-            <label for="create-top">Top</label>
-         </div>
-         <div>
+            Top
+         </button>
+         <button class="create-pos-option">
             <input type="radio" name="create-pos" id="create-bottom">
-            <label for="create-bottom">Bottom</label>
-         </div>
+            Bottom
+         </button>
       </div>
 
-      <div class="create-buttons-wrapper">
-         <button id="create-create">Create</button>
-         <button id="create-cancel">Cancel</button>
-      </div>
+      <button id="create-create">Create</button>
    </div>
 
    <template class="todo-template">
