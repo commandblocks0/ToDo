@@ -365,6 +365,8 @@ function setCreatePopupVisible(bool) {
         duration: 100,
         fill: "forwards"
     })
+    if (bool) popup.classList.add("open")
+    else popup.classList.remove("open")
     setTimeout(()=>{
         if (!bool) popup.style.display = "none"
     },300)
@@ -372,6 +374,7 @@ function setCreatePopupVisible(bool) {
 
 document.querySelector(".open-create").addEventListener("click",()=>{
     setCreatePopupVisible(true)
+    document.getElementById("create-text").value = ""
     document.getElementById("create-text").focus()
 })
 
@@ -390,4 +393,14 @@ document.querySelectorAll(".create-pos-option").forEach(el=>{
     el.addEventListener("click",()=>{
         el.querySelector("input").checked = true
     })
+})
+
+document.addEventListener("keydown",(e)=>{
+    if (!document.querySelector(".create-popup").classList.contains("open")) return
+    if (e.key === "Escape") {
+        setCreatePopupVisible(false)
+    }
+    if (e.key === "Enter") {
+        document.getElementById("create-create").click()
+    }
 })

@@ -42,10 +42,6 @@ button, .todo {
 
 button {
     cursor: pointer;
-
-    &:focus {
-        outline: #666 solid 2px;
-    }
 }
 
 .btn-wrapper {
@@ -188,9 +184,9 @@ body.reordering {
 }
 
 #create-text:focus {
+    border: #05a solid 1px;
+    box-shadow: 0 0 5px 2px #05a;
     outline: none;
-    border-color: #1e88ff;
-    box-shadow: 0 0 0 2px rgba(30,136,255,.25);
 }
 
 .create-pos-wrapper {
@@ -200,24 +196,13 @@ body.reordering {
 
 .create-pos-wrapper input {
     display: none;
-}i
+}
 
 .create-pos-option {
-    background: #1c1c1c;
-    padding: .5rem;
-    border-radius: 8px;
-    flex: 1;
-    text-align: center;
-    border: 1px solid #444;
-    cursor: pointer;
-    transition: .15s;
+    transition: .1s;
 }
 
-.create-pos-wrapper div:hover {
-    background: #242424;
-}
-
-.create-pos-wrapper div:has(input:checked) {
+.create-pos-option:has(input:checked) {
     background: #444;
     border-color: #444;
 }
