@@ -259,3 +259,9 @@ body.reordering {
         display: none;
     }
 }
+
+@media (keyboard-inset-height > 0px) {
+  .create-popup {
+    bottom: env(keyboard-inset-height);
+  }
+}
