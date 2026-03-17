@@ -57,7 +57,7 @@ try {
             logoutIndicator.classList.add("hidden");
         }
     })
-} catch (error) {}
+} catch (error) { }
 
 authButton.addEventListener("click", () => {
     if (userId) {
@@ -108,7 +108,7 @@ function load(anim = false) {
         });
 
         todo.addEventListener("touchend", (e) => {
-            if (dragState.active || startX==null) return;
+            if (dragState.active || startX == null) return;
             const endX = e.changedTouches[0].clientX;
             todo.style.opacity = 1;
             if (Math.abs(endX - startX) > 200) {
@@ -125,7 +125,7 @@ function load(anim = false) {
         });
 
         todo.addEventListener("touchmove", (e) => {
-            if (dragState.active || startX==null) return;
+            if (dragState.active || startX == null) return;
             const endX = e.changedTouches[0].clientX;
             todo.style.opacity = 1 - Math.abs(endX - startX) / 200;
         });
@@ -183,7 +183,7 @@ function applyChanges(array, array2) {
 }
 
 function sync() {
-    syncQueue = syncQueue.then(async()=>{
+    syncQueue = syncQueue.then(async () => {
         if (!userId) return;
         const docSnap = await getDoc(doc(db, "data", userId));
         const cloudTodos = docSnap.exists() ? docSnap.data().todoList || [] : [];
@@ -383,28 +383,28 @@ function setCreatePopupVisible(bool) {
     const popup = document.querySelector(".create-popup")
     popup.style.display = "flex"
     popup.animate([
-        {scale: bool ? 0 : 1}, {scale: bool ? 1 : 0}
-    ],{
+        { scale: bool ? 0 : 1 }, { scale: bool ? 1 : 0 }
+    ], {
         duration: 100,
         fill: "forwards"
     })
     if (bool) popup.classList.add("open")
     else popup.classList.remove("open")
-    setTimeout(()=>{
+    setTimeout(() => {
         if (!bool) popup.style.display = "none"
-    },300)
+    }, 300)
 }
 
-document.querySelector(".open-create").addEventListener("click",()=>{
+document.querySelector(".open-create").addEventListener("click", () => {
     setCreatePopupVisible(true)
     document.getElementById("create-text").value = ""
     document.getElementById("create-text").focus()
 })
 
-document.getElementById("create-create").addEventListener("click",()=>{
+document.getElementById("create-create").addEventListener("click", () => {
     const text = document.getElementById("create-text")
-    
-    if (text.value.trim()=="") return
+
+    if (text.value.trim() == "") return
 
     if (document.getElementById("create-current").checked) {
         addTodo(text.value, "current")
@@ -417,15 +417,15 @@ document.getElementById("create-create").addEventListener("click",()=>{
     setCreatePopupVisible(false)
 })
 
-document.getElementById("create-close").addEventListener("click", ()=>setCreatePopupVisible(false))
+document.getElementById("create-close").addEventListener("click", () => setCreatePopupVisible(false))
 
-document.querySelectorAll(".create-pos-option").forEach(el=>{
-    el.addEventListener("click",()=>{
+document.querySelectorAll(".create-pos-option").forEach(el => {
+    el.addEventListener("click", () => {
         el.querySelector("input").checked = true
     })
 })
 
-document.addEventListener("keydown",(e)=>{
+document.addEventListener("keydown", (e) => {
     if (!document.querySelector(".create-popup").classList.contains("open")) return
     if (e.key === "Escape") {
         setCreatePopupVisible(false)
@@ -435,7 +435,12 @@ document.addEventListener("keydown",(e)=>{
     }
 })
 
-window.visualViewport.addEventListener('resize', ()=>{
+window.visualViewport.addEventListener('resize', () => {
     const vh = window.visualViewport.height;
     document.querySelector(".create-popup").style.top = (vh / 2) + 'px';
 });
+
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js")
+        .then(() => console.log("Service Worker registered"));
+}

@@ -31,7 +31,8 @@ main {
     gap: 10px;
 }
 
-button, .todo {
+button,
+.todo {
     background: #333;
     border: none;
     color: white;
@@ -62,7 +63,7 @@ button {
     overflow-y: auto;
 }
 
-.todos-wrapper > div {
+.todos-wrapper>div {
     display: flex;
     gap: 10px;
     align-items: center;
@@ -162,9 +163,9 @@ body.reordering {
     z-index: 99;
     min-width: 300px;
 
-    box-shadow: 
-        0 20px 40px rgba(0,0,0,.5),
-        inset 0 1px 0 rgba(255,255,255,.04);
+    box-shadow:
+        0 20px 40px rgba(0, 0, 0, .5),
+        inset 0 1px 0 rgba(255, 255, 255, .04);
 }
 
 .create-text-wrapper {
