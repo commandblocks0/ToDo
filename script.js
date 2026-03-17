@@ -404,3 +404,8 @@ document.addEventListener("keydown",(e)=>{
         document.getElementById("create-create").click()
     }
 })
+
+window.visualViewport.addEventListener('resize', ()=>{
+    const vh = window.visualViewport.height;
+    document.querySelector(".create-popup").style.top = (vh / 2) + 'px';
+});

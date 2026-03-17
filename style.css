@@ -152,7 +152,7 @@ body.reordering {
     border-radius: 14px;
     position: fixed;
     left: 50%;
-    top: 50%;
+    top: 50dvh;
     translate: -50% -50%;
     flex-direction: column;
     gap: 1.25rem;
@@ -258,10 +258,4 @@ body.reordering {
     .todo .remove {
         display: none;
     }
-}
-
-@media (keyboard-inset-height > 0px) {
-  .create-popup {
-    bottom: env(keyboard-inset-height);
-  }
 }
