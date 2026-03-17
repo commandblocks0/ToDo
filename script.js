@@ -155,12 +155,13 @@ function save() {
 
 function applyChanges(array, array2) {
     for (let change of array2) {
-        if (change.type === "addTop") {
-            if (array.find(item => item.id === change.id)) continue
-            array.unshift({ text: change.value, id: change.id });
-        } else if (change.type === "addBottom") {
-            if (array.find(item => item.id === change.id)) continue
-            array.push({ text: change.value, id: change.id });
+        if (change.type === "add") {
+            if (array.find(item => item.id === change.id)) continue;
+            let index = Number(change.index);
+            if (!Number.isInteger(index)) index = array.length;
+            if (index < 0) index = 0;
+            if (index > array.length) index = array.length;
+            array.splice(index, 0, { text: change.value, id: change.id });
         } else if (change.type === "remove") {
             const index = array.findIndex(item => item.id === change.id);
             if (index !== -1) array.splice(index, 1);
@@ -338,22 +339,44 @@ function handlePointerUp(e) {
 
 
 // create todo
-function addTodo(text, top) {
+function addTodo(text, pos) {
     const id = Math.random().toString(16).slice(2);
-    if (lastUserId && !changes[lastUserId]) changes[lastUserId] = [];
-    if (top) {
-        todos.unshift({ text: text.trim(), id });
-        if (lastUserId) {
-            changes[lastUserId].push({ type: "addTop", value: text, id });
-        }
+    let index;
+
+    if (pos === "current") {
+        index = getCurrentIndex();
+    } else if (pos === "top") {
+        index = 0;
     } else {
-        todos.push({ text: text.trim(), id });
-        if (lastUserId) {
-            changes[lastUserId].push({ type: "addBottom", value: text, id });
-        }
+        index = todos.length;
     }
+
+    todos.splice(index, 0, { text: text.trim(), id });
+
+    if (lastUserId) {
+        if (!changes[lastUserId]) changes[lastUserId] = [];
+        changes[lastUserId].push({
+            type: "add",
+            value: text,
+            id,
+            index
+        });
+    }
+
     save();
     load(true);
+}
+
+function getCurrentIndex() {
+    const todosEls = [...todosWrapper.querySelectorAll(".todo:not(.placeholder)")];
+    const containerRect = todosWrapper.getBoundingClientRect();
+
+    for (let i = 0; i < todosEls.length; i++) {
+        const rect = todosEls[i].getBoundingClientRect();
+        if (rect.top > containerRect.top) return i;
+    }
+
+    return 0
 }
 
 function setCreatePopupVisible(bool) {
@@ -380,10 +403,17 @@ document.querySelector(".open-create").addEventListener("click",()=>{
 
 document.getElementById("create-create").addEventListener("click",()=>{
     const text = document.getElementById("create-text")
-    const top = document.getElementById("create-top").checked
     
     if (text.value.trim()=="") return
-    addTodo(text.value, top)
+
+    if (document.getElementById("create-current").checked) {
+        addTodo(text.value, "current")
+    } else if (document.getElementById("create-top").checked) {
+        addTodo(text.value, "top")
+    } else {
+        addTodo(text.value, "bottom")
+    }
+
     setCreatePopupVisible(false)
 })
 
