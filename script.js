@@ -373,7 +373,7 @@ function getCurrentIndex() {
 
     for (let i = 0; i < todosEls.length; i++) {
         const rect = todosEls[i].getBoundingClientRect();
-        if (rect.top > containerRect.top) return i;
+        if (rect.top+rect.height/2 > containerRect.top) return i;
     }
 
     return 0
