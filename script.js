@@ -71,17 +71,12 @@ authButton.addEventListener("click", () => {
 
 function load(anim = false) {
     todosWrapper.innerHTML = "";
+    const renderedTodos = [];
     for (let i = 0; i < todos.length; i++) {
         const todo = document.querySelector(".todo-template").content.cloneNode(true).querySelector(".todo");
         todo.setAttribute("data-id", todos[i].id);
         todosWrapper.appendChild(todo);
-
-        if (anim) {
-            todo.style.translate = "-100vw 0";
-            setTimeout(() => {
-                todo.style.translate = "0 0";
-            }, i * 100);
-        }
+        renderedTodos.push(todo);
 
         const text = todo.querySelector(".text");
         const reorderBtn = todo.querySelector(".reorder");
@@ -145,6 +140,61 @@ function load(anim = false) {
             }, { once: true });
         });
     }
+
+    if (anim) {
+        runVisibleTodoIntroAnimations(renderedTodos);
+    }
+}
+
+function runVisibleTodoIntroAnimations(todoElements) {
+    const visibleTodos = todoElements.filter(isTodoVisibleInWrapper);
+    if (visibleTodos.length === 0) return;
+
+    visibleTodos.forEach((todo) => {
+        todo.style.translate = "-100vw 0";
+    });
+
+    // Force initial translated state so transition starts reliably.
+    void todosWrapper.offsetHeight;
+
+    requestAnimationFrame(() => {
+        visibleTodos.forEach((todo, index) => {
+            setTimeout(() => {
+                if (!todo.isConnected) return;
+                todo.style.translate = "0 0";
+            }, index * 60);
+        });
+    });
+}
+
+window.todoDebug = window.todoDebug || {};
+window.todoDebug.load = load;
+window.loadTodos = (anim = false) => load(anim);
+globalThis.loadTodos = window.loadTodos;
+
+function isTodoVisibleInWrapper(todo) {
+    const wrapperIsScrollable = todosWrapper.scrollHeight > todosWrapper.clientHeight + 1;
+    const todoRect = todo.getBoundingClientRect();
+    let rootTop;
+    let rootBottom;
+
+    if (wrapperIsScrollable) {
+        const wrapperRect = todosWrapper.getBoundingClientRect();
+        rootTop = wrapperRect.top;
+        rootBottom = wrapperRect.bottom;
+    } else {
+        rootTop = 0;
+        rootBottom = window.innerHeight || document.documentElement.clientHeight;
+    }
+
+    const overscan = 80;
+    const expandedTop = rootTop - overscan;
+    const expandedBottom = rootBottom + overscan;
+    const visiblePixels = Math.min(todoRect.bottom, rootBottom) - Math.max(todoRect.top, rootTop);
+    const visibleRatio = visiblePixels / Math.max(todoRect.height, 1);
+    const nearViewport = todoRect.bottom > expandedTop && todoRect.top < expandedBottom;
+
+    return visibleRatio >= 0.6 || (nearViewport && visibleRatio > 0);
 }
 
 function save() {
