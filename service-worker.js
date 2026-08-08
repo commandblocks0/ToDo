@@ -1,4 +1,5 @@
-const CACHE = "todo-v2";
+const CACHE = "todo-v3";
+
 const ASSETS = [
   "./",
   "./index.html",
@@ -32,30 +33,41 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const requestUrl = new URL(event.request.url);
-  const isSameOrigin = requestUrl.origin === self.location.origin;
 
-  if (!isSameOrigin) return;
-
-  if (event.request.mode === "navigate") {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put("./index.html", copy));
-          return response;
-        })
-        .catch(() => caches.match("./index.html"))
-    );
-    return;
-  }
+  // Only handle requests from our own website
+  if (requestUrl.origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE).then((cache) => cache.put(event.request, copy));
-        return response;
-      })
-      .catch(() => caches.match(event.request))
+    caches.match(event.request).then((cachedResponse) => {
+      // CACHE FIRST
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      return fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+
+            caches.open(CACHE).then((cache) => {
+              cache.put(event.request, copy);
+            });
+          }
+
+          return response;
+        })
+        .catch(() => {
+          if (event.request.mode === "navigate") {
+            return caches.match("./index.html");
+          }
+
+          return new Response("Offline", {
+            status: 503,
+            headers: {
+              "Content-Type": "text/plain"
+            }
+          });
+        });
+    })
   );
 });
