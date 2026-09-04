@@ -97,32 +97,70 @@ function load(anim = false) {
         });
 
         let startX = null;
-        todo.addEventListener("touchstart", (e) => {
+
+        todo.addEventListener("pointerdown", (e) => {
             if (dragState.active) return;
-            startX = e.touches[0].clientX;
+            if (e.pointerType === "mouse" && e.button !== 0) return;
+            if (e.target.closest(".reorder")) return;
+            if (e.target.closest(".remove")) return;
+
+            startX = e.clientX;
+            todo.setPointerCapture(e.pointerId);
+            todo.style.transition = "none";
         });
 
-        todo.addEventListener("touchend", (e) => {
+        todo.addEventListener("pointermove", (e) => {
             if (dragState.active || startX == null) return;
-            const endX = e.changedTouches[0].clientX;
-            todo.style.opacity = 1;
-            if (Math.abs(endX - startX) > 200) {
-                if (!confirm("Are you sure?")) return;
-                const id = todos[i].id;
-                todos.splice(i, 1);
-                if (lastUserId) {
-                    if (!changes[lastUserId]) changes[lastUserId] = [];
-                    changes[lastUserId].push({ type: "remove", id });
+
+            const distance = e.clientX - startX;
+
+            todo.style.transform = `translateX(${distance}px)`;
+            todo.style.opacity = Math.max(0, 1 - Math.abs(distance) / 200);
+        });
+
+        todo.addEventListener("pointerup", (e) => {
+            if (dragState.active || startX == null) return;
+
+            const distance = e.clientX - startX;
+            startX = null;
+
+            todo.style.transition = "transform 500ms, opacity 500ms";
+
+            if (Math.abs(distance) > 200) {
+                if (!confirm("Are you sure?")) {
+                    todo.style.transform = "";
+                    todo.style.opacity = "";
+                    return;
                 }
-                save();
-                load();
+
+                const id = todo.dataset.id;
+                const index = todos.findIndex(item => item.id === id);
+
+                if (index !== -1) {
+                    todos.splice(index, 1);
+
+                    if (lastUserId) {
+                        if (!changes[lastUserId]) changes[lastUserId] = [];
+                        changes[lastUserId].push({
+                            type: "remove",
+                            id
+                        });
+                    }
+
+                    save();
+                    load();
+                }
+            } else {
+                todo.style.transform = "";
+                todo.style.opacity = "";
             }
         });
 
-        todo.addEventListener("touchmove", (e) => {
-            if (dragState.active || startX == null) return;
-            const endX = e.changedTouches[0].clientX;
-            todo.style.opacity = 1 - Math.abs(endX - startX) / 200;
+        todo.addEventListener("pointercancel", () => {
+            startX = null;
+            todo.style.transition = "transform 500ms, opacity 500ms";
+            todo.style.transform = "";
+            todo.style.opacity = "";
         });
 
         todo.addEventListener("dblclick", () => {
@@ -154,7 +192,6 @@ function runVisibleTodoIntroAnimations(todoElements) {
         todo.style.translate = "-100vw 0";
     });
 
-    // Force initial translated state so transition starts reliably.
     void todosWrapper.offsetHeight;
 
     requestAnimationFrame(() => {

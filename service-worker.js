@@ -1,4 +1,4 @@
-const CACHE = "todo-v3";
+const CACHE = "todo-v4";
 
 const ASSETS = [
   "./",
@@ -34,7 +34,6 @@ self.addEventListener("fetch", (event) => {
 
   const requestUrl = new URL(event.request.url);
 
-  // Only handle requests from our own website
   if (requestUrl.origin !== self.location.origin) return;
 
   event.respondWith(

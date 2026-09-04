@@ -63,7 +63,7 @@ button {
     overflow-y: auto;
 }
 
-.todos-wrapper>div {
+.todo {
     display: flex;
     gap: 10px;
     align-items: center;
