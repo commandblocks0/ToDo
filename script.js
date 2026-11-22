@@ -11,6 +11,7 @@ const todosWrapper = document.querySelector(".todos-wrapper");
 const authButton = document.querySelector(".auth-button");
 const loginIndicator = authButton.querySelector(".login");
 const logoutIndicator = authButton.querySelector(".logout");
+const contextMenu = document.querySelector("#contextmenu");
 
 const firebaseConfig = {
     apiKey: "AIzaSyB8fvKr0vTYsSAgBoDM79B-ybJVPMKUTMg",
@@ -31,8 +32,12 @@ let dragState = {
     draggedEl: null,
     pointerId: null,
     offsetY: 0,
-    placeholder: null
+    placeholder: null,
+    latestY: 0,
+    lastFrameTime: 0,
+    rafId: null
 };
+let selectedTodo = null;
 
 load(true);
 let db, auth
@@ -70,6 +75,10 @@ authButton.addEventListener("click", () => {
 });
 
 function load(anim = false) {
+    if (dragState.active) {
+        cleanupDragState();
+    }
+
     todosWrapper.innerHTML = "";
     const renderedTodos = [];
     for (let i = 0; i < todos.length; i++) {
@@ -99,6 +108,7 @@ function load(anim = false) {
         let startX = null;
 
         todo.addEventListener("pointerdown", (e) => {
+            if (text.isContentEditable) return
             if (dragState.active) return;
             if (e.pointerType === "mouse" && e.button !== 0) return;
             if (e.target.closest(".reorder")) return;
@@ -106,13 +116,12 @@ function load(anim = false) {
 
             startX = e.clientX;
             todo.setPointerCapture(e.pointerId);
-            todo.style.transition = "none";
         });
 
         todo.addEventListener("pointermove", (e) => {
             if (dragState.active || startX == null) return;
 
-            const distance = e.clientX - startX;
+            const distance = Math.max(0, e.clientX - startX);
 
             todo.style.transform = `translateX(${distance}px)`;
             todo.style.opacity = Math.max(0, 1 - Math.abs(distance) / 200);
@@ -121,10 +130,8 @@ function load(anim = false) {
         todo.addEventListener("pointerup", (e) => {
             if (dragState.active || startX == null) return;
 
-            const distance = e.clientX - startX;
+            const distance = Math.max(0, e.clientX - startX);
             startX = null;
-
-            todo.style.transition = "transform 500ms, opacity 500ms";
 
             if (Math.abs(distance) > 200) {
                 if (!confirm("Are you sure?")) {
@@ -158,7 +165,6 @@ function load(anim = false) {
 
         todo.addEventListener("pointercancel", () => {
             startX = null;
-            todo.style.transition = "transform 500ms, opacity 500ms";
             todo.style.transform = "";
             todo.style.opacity = "";
         });
@@ -176,6 +182,19 @@ function load(anim = false) {
                 save();
                 load();
             }, { once: true });
+        });
+
+        todo.addEventListener("contextmenu", (e) => {
+            if (text.isContentEditable) return
+
+            e.preventDefault();
+
+            selectedTodo = todo
+
+            contextMenu.style.left = `${e.clientX}px`;
+            contextMenu.style.top = `${e.clientY}px`;
+
+            contextMenu.showPopover();
         });
     }
 
@@ -306,6 +325,8 @@ function enableDragByHandle(todo, reorderBtn) {
         dragState.pointerId = e.pointerId;
         dragState.offsetY = e.clientY - rect.top;
         dragState.placeholder = placeholder;
+        dragState.latestY = e.clientY;
+        dragState.lastFrameTime = 0;
 
         todo.classList.add("dragging");
         todo.style.width = `${rect.width}px`;
@@ -321,6 +342,7 @@ function enableDragByHandle(todo, reorderBtn) {
 
         document.addEventListener("pointermove", handlePointerMove, { passive: false });
         document.addEventListener("pointerup", handlePointerUp);
+        dragState.rafId = requestAnimationFrame(updateDrag);
         document.addEventListener("pointercancel", handlePointerUp);
     });
 }
@@ -339,6 +361,11 @@ function getDragAfterElement(container, y) {
 }
 
 function cleanupDragState() {
+    if (dragState.rafId !== null) {
+        cancelAnimationFrame(dragState.rafId);
+        dragState.rafId = null;
+    }
+
     if (dragState.draggedEl) {
         dragState.draggedEl.classList.remove("dragging");
         dragState.draggedEl.style.width = "";
@@ -366,6 +393,8 @@ function cleanupDragState() {
     dragState.pointerId = null;
     dragState.offsetY = 0;
     dragState.placeholder = null;
+    dragState.latestY = 0;
+    dragState.lastFrameTime = 0;
 }
 
 function recordReorderChange(id, targetIndex) {
@@ -375,18 +404,61 @@ function recordReorderChange(id, targetIndex) {
 }
 
 function handlePointerMove(e) {
-    if (!dragState.active || !dragState.draggedEl || !dragState.placeholder) return;
+    if (!dragState.active) return;
     if (dragState.pointerId !== null && e.pointerId !== dragState.pointerId) return;
 
     e.preventDefault();
-    dragState.draggedEl.style.top = `${e.clientY - dragState.offsetY}px`;
+    dragState.latestY = e.clientY;
+}
 
-    const afterElement = getDragAfterElement(todosWrapper, e.clientY);
-    if (afterElement) {
-        todosWrapper.insertBefore(dragState.placeholder, afterElement);
-    } else {
-        todosWrapper.appendChild(dragState.placeholder);
+function updateDrag(timestamp) {
+    if (!dragState.active || !dragState.draggedEl || !dragState.placeholder) {
+        dragState.rafId = null;
+        return;
     }
+
+    if (dragState.placeholder.parentNode !== todosWrapper) {
+        cleanupDragState();
+        load();
+        return;
+    }
+
+    const y = dragState.latestY;
+    const rect = todosWrapper.getBoundingClientRect();
+    const edgeSize = Math.min(90, rect.height / 3);
+    const maxScrollSpeed = 900;
+
+    let scrollDirection = 0;
+    let intensity = 0;
+
+    if (y < rect.top + edgeSize) {
+        scrollDirection = -1;
+        intensity = Math.min(1, (rect.top + edgeSize - y) / edgeSize);
+    } else if (y > rect.bottom - edgeSize) {
+        scrollDirection = 1;
+        intensity = Math.min(1, (y - (rect.bottom - edgeSize)) / edgeSize);
+    }
+
+    if (dragState.lastFrameTime) {
+        const deltaTime = Math.min((timestamp - dragState.lastFrameTime) / 1000, 0.05);
+        todosWrapper.scrollTop += scrollDirection * maxScrollSpeed * intensity * deltaTime;
+    }
+    dragState.lastFrameTime = timestamp;
+
+    dragState.draggedEl.style.top = `${y - dragState.offsetY}px`;
+
+    const placeholder = dragState.placeholder;
+    const afterElement = getDragAfterElement(todosWrapper, y);
+
+    if (afterElement) {
+        if (placeholder.nextElementSibling !== afterElement) {
+            todosWrapper.insertBefore(placeholder, afterElement);
+        }
+    } else if (todosWrapper.lastElementChild !== placeholder) {
+        todosWrapper.appendChild(placeholder);
+    }
+
+    dragState.rafId = requestAnimationFrame(updateDrag);
 }
 
 function handlePointerUp(e) {
@@ -425,7 +497,6 @@ function handlePointerUp(e) {
 }
 
 
-// create todo
 function addTodo(text, pos) {
     const id = Math.random().toString(16).slice(2);
     let index;
@@ -521,6 +592,34 @@ document.addEventListener("keydown", (e) => {
         document.getElementById("create-create").click()
     }
 })
+
+document.querySelector(".contextmenu-movetop").addEventListener("click", () => {
+    contextMenu.hidePopover();
+
+    if (!selectedTodo) return;
+
+    const id = selectedTodo.dataset.id;
+    const index = todos.findIndex(item => item.id === id);
+
+    if (index === -1 || index === 0) return;
+
+    const [todo] = todos.splice(index, 1);
+    todos.unshift(todo);
+
+    recordReorderChange(id, 0);
+
+    save();
+    load();
+});
+
+document.addEventListener("pointerdown", (e) => {
+    if (
+        contextMenu.matches(":popover-open") &&
+        !contextMenu.contains(e.target)
+    ) {
+        contextMenu.hidePopover();
+    }
+});
 
 window.visualViewport.addEventListener('resize', () => {
     const vh = window.visualViewport.height;

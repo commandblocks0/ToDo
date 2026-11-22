@@ -1,4 +1,4 @@
-const CACHE = "todo-v4";
+const CACHE = "todo-v5";
 
 const ASSETS = [
   "./",
@@ -37,36 +37,33 @@ self.addEventListener("fetch", (event) => {
   if (requestUrl.origin !== self.location.origin) return;
 
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      // CACHE FIRST
-      if (cachedResponse) {
-        return cachedResponse;
-      }
+      fetch(event.request)
+          .then((response) => {
+            if (response.ok) {
+              const copy = response.clone();
 
-      return fetch(event.request)
-        .then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-
-            caches.open(CACHE).then((cache) => {
-              cache.put(event.request, copy);
-            });
-          }
-
-          return response;
-        })
-        .catch(() => {
-          if (event.request.mode === "navigate") {
-            return caches.match("./index.html");
-          }
-
-          return new Response("Offline", {
-            status: 503,
-            headers: {
-              "Content-Type": "text/plain"
+              caches.open(CACHE).then((cache) => {
+                cache.put(event.request, copy);
+              });
             }
-          });
-        });
-    })
+
+            return response;
+          })
+          .catch(async () => {
+            const cachedResponse = await caches.match(event.request);
+
+            if (cachedResponse) return cachedResponse;
+
+            if (event.request.mode === "navigate") {
+              return caches.match("./index.html");
+            }
+
+            return new Response("Offline", {
+              status: 503,
+              headers: {
+                "Content-Type": "text/plain"
+              }
+            });
+          })
   );
 });
