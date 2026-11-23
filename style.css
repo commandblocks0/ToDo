@@ -1,3 +1,7 @@
+:root {
+    color-scheme: dark;
+}
+
 /* ===== Body & Layout ===== */
 body {
     background: #000;
@@ -69,6 +73,7 @@ button {
     gap: 10px;
     align-items: center;
     transition: background 500ms, translate 500ms;
+    touch-action: pan-y;
 }
 
 .todos-wrapper::-webkit-scrollbar {
